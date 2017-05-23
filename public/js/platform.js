@@ -325,3 +325,53 @@ Player.prototype.act = function(step, level, keys) {
     this.size.y -=step;
   }
 };
+
+// Lava constructor
+function Lava(pos, ch) {
+  this.pos = pos;
+  this.size = new Vector(1, 1);
+  if (ch == "=") {
+    // I'm guessing that speed will be added to this.pos
+    // in a moving method added later
+    this.speed = new Vector(2, 0);
+  } else if (ch == '|') {
+    this.speed = new Vector(0, 2);
+  } else if (ch == 'v') {
+    this.speed = new Vector(0, 3);
+    this.repeatPos = pos;
+  }
+}
+Lava.prototype.type = 'lava';
+// Action
+Lava.prototype.act = function(step, level) {
+  var newPos = this.pos.plus(this.speed.times(step));
+  if (!level.obstacleAt(newPos, this.size))
+    this.pos = newPos;
+  else if (this.repeatPos)
+    this.pos = this.repeatPos;
+  else
+    this.speed = this.speed.times(-1);
+};
+
+// Coin constructor
+function Coin(pos) {
+  this.basePos = this.pos = pos.plus(new Vector(0.2, 0.1));
+  this.size = new Vector(0.6, 0.6);
+  this.wobble = Math.random() * Math.PI * 2;
+}
+Coin.prototype.type = 'coin';
+var wobbleSpeed = 8, wobbleDist = 0.07;
+// Action
+Coin.prototype.act = function(step) {
+  this.wobble += step * wobbleSpeed;
+  var wobblePos = Math.sin(this.wobble) * wobbleDist;
+  this.pos = this.basePos.plus(new Vector(0, wobblePos));
+};
+
+// Helper function that creates an element
+// and gives it a class
+function elt(name, className) {
+  var elt = document.createElement(name);
+  if (className) elt.className = className;
+  return elt;
+}
