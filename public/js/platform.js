@@ -250,3 +250,78 @@ Level.prototype.playerTouched = function(type, actor) {
     }
   }
 }
+
+var actorChars = {
+  '@': Player,
+  'o': Coin,
+  '=': Lava, '|': Lava, 'v': Lava
+};
+
+// Vector stores the position and size of an actor
+function Vector(x, y) {
+  this.x = x; this.y = y;
+}
+Vector.prototype.plus = function(other) {
+  return new Vector(this.x + other.x, this.y + other.y);
+}
+Vector.prototype.times = function(factor) {
+  return new Vector(this.x * factor, this.y * factor);
+}
+
+// Player constructor
+function Player(pos) {
+  // This properly aligns the bottom of the player
+  // to the square below (adjusts for player height)
+  this.pos = pos.plus(new Vector(0, -0.5));
+  this.size = new Vector(0.8, 1.5);
+  this.speed = new Vector(0, 0);
+}
+Player.prototype.type = 'player';
+// X and Y movement are handled independently because
+// a wall shouldn't stop the up and down motion of jumping
+// and a floor shouldn't stop side to side movement
+var playerXSpeed = 7;
+Player.prototype.moveX = function(step, level, keys) {
+  this.speed.x = 0;
+  if (keys.left) this.speed.x -= playerXSpeed;
+  if (keys.right) this.speed.x += playerXSpeed;
+  
+  var motion = new Vector(this.speed.x * step, 0);
+  var newPos = this.pos.plus(motion);
+  var obstacle = level.obstacleAt(newPos, this.size);
+  if (obstacle)
+    level.playerTouched(obstacle);
+  else
+    this.pos = newPos;
+};
+var gravity = 30;
+var jumpSpeed = 17;
+Player.prototype.moveY = function(step, level, keys) {
+  this.speed.y += step * gravity;
+  var motion = new Vector(0, this.speed.y * step);
+  var newPos = this.pos.plus(motion);
+  var obstacle = level.obstacleAt(newPos, this.size);
+  if (obstacle) {
+    level.playerTouched(obstacle);
+    if (keys.up && this.speed.y > 0)
+      this.speed.y = -jumpSpeed;
+    else
+      this.speed.y = 0;
+  } else {
+    this.pos = newPos;
+  }
+};
+Player.prototype.act = function(step, level, keys) {
+  this.moveX(step, level, keys);
+  this.moveY(step, level, keys);
+  
+  var otherActor = level.actorAt(this);
+  if (otherActor)
+    level.playerTouched(otherActor.type, otherActor);
+  
+  // Losing animation
+  if (level.status == 'lost') {
+    this.pos.y += step;
+    this.size.y -=step;
+  }
+};
